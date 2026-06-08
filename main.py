@@ -16,8 +16,11 @@ running = True  # Pygame main loop, kills pygame when False
 # Game state variables
 is_playing = True  # Whether in game or in menu
 GROUND_Y = 300  # The Y-coordinate of the ground level
-JUMP_GRAVITY_START_SPEED = -20  # The speed at which the player jumps
-players_gravity_speed = 0  # The current speed at which the player falls
+
+# --- TUNED JUMP PHYSICS ---
+JUMP_GRAVITY_START_SPEED = -16.5  # jump height
+gravity_acceleration = 0.85       # gravity speed
+players_gravity_speed = 0         # The current speed at which the player falls
 
 # --- DIFFICULTY & SPAWNING CONFIGURATION ---
 BASE_SPEED = 5
@@ -36,9 +39,17 @@ game_font = pygame.font.Font(pygame.font.get_default_font(), 50)
 score_surf = game_font.render("SCORE?", False, "Black")
 score_rect = score_surf.get_rect(center=(400, 50))
 
-# Load sprite assets
-player_surf = pygame.image.load("graphics/player/player_walk_1.png").convert_alpha()
+# Load sprite assets (ANIMATION FRAMES)
+player_walk_1 = pygame.image.load("graphics/player/player_walk_1.png").convert_alpha()
+player_walk_2 = pygame.image.load("graphics/player/player_walk_2.png").convert_alpha()
+player_jump = pygame.image.load("graphics/player/player_jump.png").convert_alpha()
+
+player_frames = [player_walk_1, player_walk_2]
+player_index = 0
+
+player_surf = player_frames[player_index]
 player_rect = player_surf.get_rect(bottomleft=(25, GROUND_Y))
+
 egg_surf = pygame.image.load("graphics/egg/egg_1.png").convert_alpha()
 
 # List to hold multiple active obstacles
@@ -73,10 +84,9 @@ while running:
             running = False
 
         elif is_playing:
-            # When player wants to jump
+            # Correct parenthesis grouping so BOTH space and click check the ground condition
             if (
-                event.type == pygame.KEYDOWN
-                and event.key == pygame.K_SPACE
+                (event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE)
                 or event.type == pygame.MOUSEBUTTONDOWN
             ) and player_rect.bottom >= GROUND_Y:
                 players_gravity_speed = JUMP_GRAVITY_START_SPEED
@@ -103,6 +113,7 @@ while running:
                 game_speed = BASE_SPEED  # Reset speed
                 player_rect.bottom = GROUND_Y  # Reset player position
                 players_gravity_speed = 0
+                player_index = 0
                 start_time = pygame.time.get_ticks()  # Reset score clock
 
     if is_playing:
@@ -132,11 +143,25 @@ while running:
         # Update and draw obstacles, check for collisions
         is_playing = handle_obstacles(obstacle_rect_list, game_speed, player_rect)
 
-        # Adjust player's vertical location then blit it
-        players_gravity_speed += 1
+        # Apply the gravity step
+        players_gravity_speed += gravity_acceleration
         player_rect.y += players_gravity_speed
-        if player_rect.bottom > GROUND_Y:
+        
+        # Reset gravity velocity to 0 when landing so it doesn't build up infinite speed downward
+        if player_rect.bottom >= GROUND_Y:
             player_rect.bottom = GROUND_Y
+            players_gravity_speed = 0
+            
+            # --- ANIMATION LOGIC ---
+            # Cycle through frames slowly when on the ground
+            player_index += 0.1
+            if player_index >= len(player_frames):
+                player_index = 0
+            player_surf = player_frames[int(player_index)]
+        else:
+            # Show the jump sprite if the player is mid-air
+            player_surf = player_jump
+
         screen.blit(player_surf, player_rect)
 
     # When game is over, display game over message and final score
