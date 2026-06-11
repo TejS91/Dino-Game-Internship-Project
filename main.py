@@ -1,14 +1,11 @@
 """Dino Game in Python
 
-
 A game similar to the famous Chrome Dino Game, built using pygame-ce.
 Made by intern: @bassemfarid, modified for scaling difficulty. 🤖
 """
 
-
 import random
 import pygame
-
 
 # Initialize Pygame and create a window
 pygame.init()
@@ -40,9 +37,11 @@ pygame.time.set_timer(OBSTACLE_TIMER, 1200)
 # --------------------------------------------
 
 
-# Load level assets
-SKY_SURF = pygame.image.load("graphics/level/sky.png").convert()
-GROUND_SURF = pygame.image.load("graphics/level/ground.png").convert()
+# Load level assets (REPLACED SKY & GROUND WITH UNDERWATER BG)
+UNDERWATER_BG = pygame.image.load("graphics/level/underwaterbg.png").convert_alpha()
+# Scale the background to fit your 800x400 game window perfectly
+UNDERWATER_BG = pygame.transform.scale(UNDERWATER_BG, (800, 400))
+
 game_font = pygame.font.Font(pygame.font.get_default_font(), 50)
 score_surf = game_font.render("SCORE?", False, "Black")
 score_rect = score_surf.get_rect(center=(400, 50))
@@ -161,9 +160,8 @@ while running:
        score_rect = score_surf.get_rect(center=(400, 50))
 
 
-       # Blit the level assets
-       screen.blit(SKY_SURF, (0, 0))
-       screen.blit(GROUND_SURF, (0, GROUND_Y))
+       # Blit the single new underwater background image to cover the whole screen
+       screen.blit(UNDERWATER_BG, (0, 0))
 
 
        # Expand the background box slightly so the changing numbers don't clip
