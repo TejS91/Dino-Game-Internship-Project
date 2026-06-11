@@ -37,10 +37,31 @@ pygame.time.set_timer(OBSTACLE_TIMER, 1200)
 # --------------------------------------------
 
 
-# Load level assets (REPLACED SKY & GROUND WITH UNDERWATER BG)
+# Load the image with alpha support
 UNDERWATER_BG = pygame.image.load("graphics/level/underwaterbg.png").convert_alpha()
-# Scale the background to fit your 800x400 game window perfectly
-UNDERWATER_BG = pygame.transform.scale(UNDERWATER_BG, (800, 400))
+
+# Scale dynamically to match window width without squishing vertically
+bg_width = 800
+bg_height = int(UNDERWATER_BG.get_height() * (bg_width / UNDERWATER_BG.get_width()))
+UNDERWATER_BG = pygame.transform.scale(UNDERWATER_BG, (bg_width, bg_height))
+
+
+# --- PROCEDURAL UNDERWATER BRICK FLOOR ---
+# This automatically generates a pixel-art brick texture to fill the bottom space perfectly
+floor_height = 400 - bg_height
+BRICK_FLOOR = pygame.Surface((800, floor_height))
+BRICK_FLOOR.fill("#1d3354")  # Deep blue-grey brick base
+
+for y in range(0, floor_height, 24):
+    # Horizontal grout lines
+    pygame.draw.line(BRICK_FLOOR, "#0f1b2d", (0, y), (800, y), 2)
+    # Staggered vertical grout lines
+    shift = 20 if (y // 24) % 2 == 0 else 0
+    for x in range(shift, 800, 40):
+        pygame.draw.line(BRICK_FLOOR, "#0f1b2d", (x, y), (x, y + 24), 2)
+        # Subtle pixel art highlight on each brick
+        pygame.draw.line(BRICK_FLOOR, "#28446e", (x + 2, y + 2), (x + 38, y + 2), 1)
+
 
 game_font = pygame.font.Font(pygame.font.get_default_font(), 50)
 score_surf = game_font.render("SCORE?", False, "Black")
@@ -72,8 +93,6 @@ start_time = 0
 score = 0
 
 
-
-
 # Helper function to handle obstacle movement and collisions
 def handle_obstacles(obstacle_list, speed, player_rect):
    if obstacle_list:
@@ -82,19 +101,14 @@ def handle_obstacles(obstacle_list, speed, player_rect):
            obstacle_rect.x -= speed
            screen.blit(egg_surf, obstacle_rect)
 
-
            # Check for collision
            if player_rect.colliderect(obstacle_rect):
                return False
 
-
        # Keep only obstacles that are still on the screen
        obstacle_list[:] = [obs for obs in obstacle_list if obs.right > 0]
 
-
    return True
-
-
 
 
 while running:
@@ -102,7 +116,6 @@ while running:
    for event in pygame.event.get():
        if event.type == pygame.QUIT:
            running = False
-
 
        elif is_playing:
            # Correct parenthesis grouping so BOTH space and click check the ground condition
@@ -112,7 +125,6 @@ while running:
            ) and player_rect.bottom >= GROUND_Y:
                players_gravity_speed = JUMP_GRAVITY_START_SPEED
 
-
            # Randomly decide to spawn an egg when the timer fires
            if event.type == OBSTACLE_TIMER:
                # 70% chance to spawn an egg, creating sporadic gaps
@@ -121,13 +133,11 @@ while running:
                    spawn_x = random.randint(900, 1100)
                    new_egg = egg_surf.get_rect(bottomleft=(spawn_x, GROUND_Y))
 
-
                    # Prevent spawning eggs directly on top of each other
                    if not obstacle_rect_list or (
                        new_egg.left - obstacle_rect_list[-1].right > 200
                    ):
                        obstacle_rect_list.append(new_egg)
-
 
        else:
            # When player wants to play again by pressing SPACE
@@ -140,39 +150,34 @@ while running:
                player_index = 0
                start_time = pygame.time.get_ticks()  # Reset score clock
 
-
    if is_playing:
-       screen.fill("purple")
-
+       screen.fill("black")
 
        # Calculate live score based on elapsed milliseconds
        current_time = pygame.time.get_ticks() - start_time
        score = int(current_time / 100)
 
-
        # --- SCALE DIFFICULTY ---
        # Increase speed by 1 unit for every 100 points scored, capped at speed 15
        game_speed = BASE_SPEED + min(score // 100, 10)
-
 
        # Generate the dynamic text surface and its matching rectangle
        score_surf = game_font.render(f"Score: {score}", False, "Black")
        score_rect = score_surf.get_rect(center=(400, 50))
 
-
-       # Blit the single new underwater background image to cover the whole screen
+       # Blit the single new underwater background image to cover the top half
        screen.blit(UNDERWATER_BG, (0, 0))
 
+       # Blit our clean brick floor right beneath it, replacing the purple void!
+       screen.blit(BRICK_FLOOR, (0, bg_height))
 
        # Expand the background box slightly so the changing numbers don't clip
        pygame.draw.rect(screen, "#c0e8ec", score_rect.inflate(20, 10))
        pygame.draw.rect(screen, "#c0e8ec", score_rect.inflate(20, 10), 10)
        screen.blit(score_surf, score_rect)
 
-
        # Update and draw obstacles, check for collisions
        is_playing = handle_obstacles(obstacle_rect_list, game_speed, player_rect)
-
 
        # Apply the gravity step
        players_gravity_speed += gravity_acceleration
@@ -193,9 +198,7 @@ while running:
            # Show the jump sprite if the player is mid-air
            player_surf = player_jump
 
-
        screen.blit(player_surf, player_rect)
-
 
    # When game is over, display game over message and final score
    else:
@@ -207,9 +210,7 @@ while running:
        screen.blit(game_over_surf, game_over_rect)
        screen.blit(retry_surf, retry_rect)
 
-
    pygame.display.flip()
    clock.tick(60)
-
 
 pygame.quit()
