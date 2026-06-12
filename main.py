@@ -37,7 +37,7 @@ pygame.time.set_timer(OBSTACLE_TIMER, 1200)
 # --------------------------------------------
 
 
-# Load the image with alpha support
+# Load the image 
 UNDERWATER_BG = pygame.image.load("graphics/level/underwaterbg.png").convert_alpha()
 
 # Scale background to accurately fit the top 350px
@@ -63,7 +63,6 @@ for y in range(0, floor_height, 25):
 
 
 # --- NEW: SCROLLING POSITION VARIABLES ---
-# Track horizontal positions for background and floor independently
 bg_x = 0
 floor_x = 0
 
@@ -79,22 +78,10 @@ player_walk_2 = pygame.image.load("graphics/player/scuba_swim_2.png").convert_al
 player_jump = pygame.image.load("graphics/player/scuba_jump_1.png").convert_alpha()
 
 
-# --- FIX: PROPORTIONAL SCALING BASED ON FRAME 1 ---
-# 1. First, make the beautiful first frame a bit larger (scaled up by ~1.5x naturally)
-player_walk_1 = pygame.transform.scale(player_walk_1, (110, 50))
-
-# 2. Get its target height to use as our visual baseline anchor
-target_height = player_walk_1.get_height()
-
-# 3. Scale Frame 2 and the Jump Frame by dynamically calculating their native aspect ratios!
-# This prevents flattening or squeezing entirely.
-w2, h2 = player_walk_2.get_size()
-scale_ratio_2 = target_height / h2
-player_walk_2 = pygame.transform.scale(player_walk_2, (int(w2 * scale_ratio_2), target_height))
-
-wj, hj = player_jump.get_size()
-scale_ratio_j = 85 / hj  # Keeps the jump tall and clear on screen
-player_jump = pygame.transform.scale(player_jump, (int(wj * scale_ratio_j), 85))
+# Overrides uneven file crops and sizes to align their footprints
+player_walk_1 = pygame.transform.scale(player_walk_1, (130, 95))
+player_walk_2 = pygame.transform.scale(player_walk_2, (130, 80))
+player_jump = pygame.transform.scale(player_jump, (110, 110))
 
 
 player_frames = [player_walk_1, player_walk_2]
@@ -185,7 +172,7 @@ while running:
        score_rect = score_surf.get_rect(center=(400, 50))
 
 
-       # --- NEW: UPDATE AND DRAW MOVING BACKGROUND (PARALLAX EFFECT) ---
+       # --- UPDATE AND DRAW MOVING BACKGROUND (PARALLAX EFFECT) ---
        bg_x -= game_speed * 0.2
        if bg_x <= -bg_width:
            bg_x = 0
@@ -194,7 +181,7 @@ while running:
        screen.blit(UNDERWATER_BG, (bg_x + bg_width, 0))
 
 
-       # --- NEW: UPDATE AND DRAW MOVING BRICK FLOOR ---
+       # --- UPDATE AND DRAW MOVING BRICK FLOOR ---
        floor_x -= game_speed
        if floor_x <= -800:
            floor_x = 0
