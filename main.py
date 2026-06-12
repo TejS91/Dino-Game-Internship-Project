@@ -16,7 +16,7 @@ running = True  # Pygame main loop, kills pygame when False
 
 # Game state variables
 is_playing = True  # Whether in game or in menu
-GROUND_Y = 300  # The Y-coordinate of the ground level
+GROUND_Y = 350  # Positions feet perfectly onto the brick floor top edge
 
 
 # --- TUNED JUMP PHYSICS ---
@@ -40,27 +40,32 @@ pygame.time.set_timer(OBSTACLE_TIMER, 1200)
 # Load the image with alpha support
 UNDERWATER_BG = pygame.image.load("graphics/level/underwaterbg.png").convert_alpha()
 
-# Scale dynamically to match window width without squishing vertically
+# Scale background to accurately fit the top 350px
+bg_height = 350
 bg_width = 800
-bg_height = int(UNDERWATER_BG.get_height() * (bg_width / UNDERWATER_BG.get_width()))
 UNDERWATER_BG = pygame.transform.scale(UNDERWATER_BG, (bg_width, bg_height))
 
 
-# --- PROCEDURAL UNDERWATER BRICK FLOOR ---
-# This automatically generates a pixel-art brick texture to fill the bottom space perfectly
+# --- PROCEDURAL UNDERWATER BRICK RUNWAY ---
 floor_height = 400 - bg_height
 BRICK_FLOOR = pygame.Surface((800, floor_height))
 BRICK_FLOOR.fill("#1d3354")  # Deep blue-grey brick base
 
-for y in range(0, floor_height, 24):
+for y in range(0, floor_height, 25):
     # Horizontal grout lines
     pygame.draw.line(BRICK_FLOOR, "#0f1b2d", (0, y), (800, y), 2)
     # Staggered vertical grout lines
-    shift = 20 if (y // 24) % 2 == 0 else 0
+    shift = 20 if (y // 25) % 2 == 0 else 0
     for x in range(shift, 800, 40):
-        pygame.draw.line(BRICK_FLOOR, "#0f1b2d", (x, y), (x, y + 24), 2)
+        pygame.draw.line(BRICK_FLOOR, "#0f1b2d", (x, y), (x, y + 25), 2)
         # Subtle pixel art highlight on each brick
         pygame.draw.line(BRICK_FLOOR, "#28446e", (x + 2, y + 2), (x + 38, y + 2), 1)
+
+
+# --- NEW: SCROLLING POSITION VARIABLES ---
+# Track horizontal positions for background and floor independently
+bg_x = 0
+floor_x = 0
 
 
 game_font = pygame.font.Font(pygame.font.get_default_font(), 50)
@@ -118,22 +123,17 @@ while running:
            running = False
 
        elif is_playing:
-           # Correct parenthesis grouping so BOTH space and click check the ground condition
            if (
                (event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE)
                or event.type == pygame.MOUSEBUTTONDOWN
            ) and player_rect.bottom >= GROUND_Y:
                players_gravity_speed = JUMP_GRAVITY_START_SPEED
 
-           # Randomly decide to spawn an egg when the timer fires
            if event.type == OBSTACLE_TIMER:
-               # 70% chance to spawn an egg, creating sporadic gaps
                if random.randint(0, 10) < 7:
-                   # Spawn slightly off-screen with a bit of random offset variance
                    spawn_x = random.randint(900, 1100)
                    new_egg = egg_surf.get_rect(bottomleft=(spawn_x, GROUND_Y))
 
-                   # Prevent spawning eggs directly on top of each other
                    if not obstacle_rect_list or (
                        new_egg.left - obstacle_rect_list[-1].right > 200
                    ):
@@ -148,28 +148,46 @@ while running:
                player_rect.bottom = GROUND_Y  # Reset player position
                players_gravity_speed = 0
                player_index = 0
+               bg_x = 0         # Reset background scroll position
+               floor_x = 0      # Reset floor scroll position
                start_time = pygame.time.get_ticks()  # Reset score clock
 
    if is_playing:
-       screen.fill("black")
+       screen.fill("#1d3354")
 
        # Calculate live score based on elapsed milliseconds
        current_time = pygame.time.get_ticks() - start_time
        score = int(current_time / 100)
 
        # --- SCALE DIFFICULTY ---
-       # Increase speed by 1 unit for every 100 points scored, capped at speed 15
        game_speed = BASE_SPEED + min(score // 100, 10)
 
        # Generate the dynamic text surface and its matching rectangle
        score_surf = game_font.render(f"Score: {score}", False, "Black")
        score_rect = score_surf.get_rect(center=(400, 50))
 
-       # Blit the single new underwater background image to cover the top half
-       screen.blit(UNDERWATER_BG, (0, 0))
 
-       # Blit our clean brick floor right beneath it, replacing the purple void!
-       screen.blit(BRICK_FLOOR, (0, bg_height))
+       # --- NEW: UPDATE AND DRAW MOVING BACKGROUND (PARALLAX EFFECT) ---
+       # Moving the background at 20% of game speed makes the distant ruins feel far away!
+       bg_x -= game_speed * 0.2
+       if bg_x <= -bg_width:
+           bg_x = 0
+
+       # Stitch two background images side-by-side so there are no seams when moving
+       screen.blit(UNDERWATER_BG, (bg_x, 0))
+       screen.blit(UNDERWATER_BG, (bg_x + bg_width, 0))
+
+
+       # --- NEW: UPDATE AND DRAW MOVING BRICK FLOOR ---
+       # Moving the floor at 100% speed matches the movement of the incoming obstacles
+       floor_x -= game_speed
+       if floor_x <= -800:
+           floor_x = 0
+
+       # Stitch two floor surfaces side-by-side to make the line seamless
+       screen.blit(BRICK_FLOOR, (floor_x, bg_height))
+       screen.blit(BRICK_FLOOR, (floor_x + 800, bg_height))
+
 
        # Expand the background box slightly so the changing numbers don't clip
        pygame.draw.rect(screen, "#c0e8ec", score_rect.inflate(20, 10))
@@ -189,7 +207,6 @@ while running:
            players_gravity_speed = 0
           
            # --- ANIMATION LOGIC ---
-           # Cycle through frames slowly when on the ground
            player_index += 0.1
            if player_index >= len(player_frames):
                player_index = 0
