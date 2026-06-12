@@ -76,7 +76,25 @@ score_rect = score_surf.get_rect(center=(400, 50))
 # Load sprite assets (ANIMATION FRAMES)
 player_walk_1 = pygame.image.load("graphics/player/scuba_swim_1.png").convert_alpha()
 player_walk_2 = pygame.image.load("graphics/player/scuba_swim_2.png").convert_alpha()
-player_jump = pygame.image.load("graphics/player/player_jump.png").convert_alpha()
+player_jump = pygame.image.load("graphics/player/scuba_jump_1.png").convert_alpha()
+
+
+# --- FIX: PROPORTIONAL SCALING BASED ON FRAME 1 ---
+# 1. First, make the beautiful first frame a bit larger (scaled up by ~1.5x naturally)
+player_walk_1 = pygame.transform.scale(player_walk_1, (110, 50))
+
+# 2. Get its target height to use as our visual baseline anchor
+target_height = player_walk_1.get_height()
+
+# 3. Scale Frame 2 and the Jump Frame by dynamically calculating their native aspect ratios!
+# This prevents flattening or squeezing entirely.
+w2, h2 = player_walk_2.get_size()
+scale_ratio_2 = target_height / h2
+player_walk_2 = pygame.transform.scale(player_walk_2, (int(w2 * scale_ratio_2), target_height))
+
+wj, hj = player_jump.get_size()
+scale_ratio_j = 85 / hj  # Keeps the jump tall and clear on screen
+player_jump = pygame.transform.scale(player_jump, (int(wj * scale_ratio_j), 85))
 
 
 player_frames = [player_walk_1, player_walk_2]
@@ -168,23 +186,19 @@ while running:
 
 
        # --- NEW: UPDATE AND DRAW MOVING BACKGROUND (PARALLAX EFFECT) ---
-       # Moving the background at 20% of game speed makes the distant ruins feel far away!
        bg_x -= game_speed * 0.2
        if bg_x <= -bg_width:
            bg_x = 0
 
-       # Stitch two background images side-by-side so there are no seams when moving
        screen.blit(UNDERWATER_BG, (bg_x, 0))
        screen.blit(UNDERWATER_BG, (bg_x + bg_width, 0))
 
 
        # --- NEW: UPDATE AND DRAW MOVING BRICK FLOOR ---
-       # Moving the floor at 100% speed matches the movement of the incoming obstacles
        floor_x -= game_speed
        if floor_x <= -800:
            floor_x = 0
 
-       # Stitch two floor surfaces side-by-side to make the line seamless
        screen.blit(BRICK_FLOOR, (floor_x, bg_height))
        screen.blit(BRICK_FLOOR, (floor_x + 800, bg_height))
 
@@ -211,9 +225,15 @@ while running:
            if player_index >= len(player_frames):
                player_index = 0
            player_surf = player_frames[int(player_index)]
+           
+           # Recalculate rect dimensions to prevent frame-shaking on the ground
+           player_rect = player_surf.get_rect(bottomleft=player_rect.bottomleft)
        else:
            # Show the jump sprite if the player is mid-air
            player_surf = player_jump
+           
+           # Recalculate rect dimensions for the airborne frame
+           player_rect = player_surf.get_rect(bottomleft=player_rect.bottomleft)
 
        screen.blit(player_surf, player_rect)
 
