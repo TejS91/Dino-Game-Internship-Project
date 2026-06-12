@@ -20,7 +20,7 @@ GROUND_Y = 350  # Positions feet perfectly onto the brick floor top edge
 
 
 # --- TUNED JUMP PHYSICS ---
-JUMP_GRAVITY_START_SPEED = -16.5  # jump height
+JUMP_GRAVITY_START_SPEED = -18.5  # jump height
 gravity_acceleration = 0.85       # gravity speed
 players_gravity_speed = 0         # The current speed at which the player falls
 
@@ -74,8 +74,8 @@ score_rect = score_surf.get_rect(center=(400, 50))
 
 
 # Load sprite assets (ANIMATION FRAMES)
-player_walk_1 = pygame.image.load("graphics/player/player_walk_1.png").convert_alpha()
-player_walk_2 = pygame.image.load("graphics/player/player_walk_2.png").convert_alpha()
+player_walk_1 = pygame.image.load("graphics/player/scuba_swim_1.png").convert_alpha()
+player_walk_2 = pygame.image.load("graphics/player/scuba_swim_2.png").convert_alpha()
 player_jump = pygame.image.load("graphics/player/player_jump.png").convert_alpha()
 
 
