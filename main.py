@@ -93,7 +93,7 @@ FOREGROUND_SURF = create_parallax_foreground()
 
 # Moving Layer Backgrounds
 def draw_parallax_scrolling(screen, speed, coords):
-    """Updates, cycles, and displays infinite multi-layered scrolling planes."""
+    """Updates, cycles, and displays planes."""
     coords["bg"] -= speed * 0.15
     if coords["bg"] <= -800: coords["bg"] = 0
     screen.blit(UNDERWATER_BG, (coords["bg"], 0))
